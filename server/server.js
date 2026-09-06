@@ -31,6 +31,7 @@ app.use((req, res, next) => {
 // API Routes
 app.use('/api/skills', require('./routes/skillRoutes'));
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
 
 // Health & System Status Endpoint
 app.get('/api/health', (req, res) => {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeftRight, PlusCircle, Search, User, Menu, X, Database, LogIn, LogOut } from 'lucide-react';
+import { ArrowLeftRight, PlusCircle, Search, User, Menu, X, Database, LogIn, LogOut, BookOpen } from 'lucide-react';
 
 export default function Navbar({ activeTab, setActiveTab, onOpenAddSkill, onOpenAuth, user, onLogout, dbStatus }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -80,7 +80,7 @@ export default function Navbar({ activeTab, setActiveTab, onOpenAddSkill, onOpen
           <button
             onClick={() => handleNavClick('home')}
             style={{
-              padding: '0.5rem 1rem',
+              padding: '0.5rem 0.9rem',
               borderRadius: 'var(--radius-md)',
               fontWeight: 600,
               fontSize: '0.925rem',
@@ -94,7 +94,7 @@ export default function Navbar({ activeTab, setActiveTab, onOpenAddSkill, onOpen
           <button
             onClick={() => handleNavClick('browse')}
             style={{
-              padding: '0.5rem 1rem',
+              padding: '0.5rem 0.9rem',
               borderRadius: 'var(--radius-md)',
               fontWeight: 600,
               fontSize: '0.925rem',
@@ -105,6 +105,38 @@ export default function Navbar({ activeTab, setActiveTab, onOpenAddSkill, onOpen
           >
             Browse Skills
           </button>
+          {user && (
+            <>
+              <button
+                onClick={() => handleNavClick('my-skills')}
+                style={{
+                  padding: '0.5rem 0.9rem',
+                  borderRadius: 'var(--radius-md)',
+                  fontWeight: 600,
+                  fontSize: '0.925rem',
+                  color: activeTab === 'my-skills' ? 'var(--primary)' : 'var(--slate-600)',
+                  backgroundColor: activeTab === 'my-skills' ? 'var(--primary-light)' : 'transparent',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                My Skills
+              </button>
+              <button
+                onClick={() => handleNavClick('profile')}
+                style={{
+                  padding: '0.5rem 0.9rem',
+                  borderRadius: 'var(--radius-md)',
+                  fontWeight: 600,
+                  fontSize: '0.925rem',
+                  color: activeTab === 'profile' ? 'var(--primary)' : 'var(--slate-600)',
+                  backgroundColor: activeTab === 'profile' ? 'var(--primary-light)' : 'transparent',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                Profile
+              </button>
+            </>
+          )}
           <button
             onClick={onOpenAddSkill}
             className="btn btn-secondary btn-sm"
@@ -127,7 +159,7 @@ export default function Navbar({ activeTab, setActiveTab, onOpenAddSkill, onOpen
         <div style={{
           display: 'none',
           alignItems: 'center',
-          gap: '1rem'
+          gap: '0.85rem'
         }} className="desktop-nav">
           {/* Cloud Database Status Pill */}
           <div 
@@ -156,16 +188,22 @@ export default function Navbar({ activeTab, setActiveTab, onOpenAddSkill, onOpen
           </div>
 
           {user ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.35rem 0.75rem',
-                borderRadius: 'var(--radius-full)',
-                backgroundColor: 'var(--slate-100)',
-                border: '1px solid var(--slate-200)'
-              }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <button
+                onClick={() => handleNavClick('profile')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.35rem 0.75rem',
+                  borderRadius: 'var(--radius-full)',
+                  backgroundColor: activeTab === 'profile' ? 'var(--primary-light)' : 'var(--slate-100)',
+                  border: `1px solid ${activeTab === 'profile' ? 'var(--primary)' : 'var(--slate-200)'}`,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+                title="View Profile"
+              >
                 <img 
                   src={user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'} 
                   alt={user.name}
@@ -174,14 +212,14 @@ export default function Navbar({ activeTab, setActiveTab, onOpenAddSkill, onOpen
                 <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--slate-700)' }}>
                   {user.name.split(' ')[0]}
                 </span>
-              </div>
+              </button>
               <button 
                 onClick={onLogout}
                 className="btn btn-ghost btn-sm" 
                 title="Log Out"
-                style={{ padding: '0.4rem' }}
+                style={{ padding: '0.45rem', color: 'var(--slate-500)' }}
               >
-                <LogOut size={17} />
+                <LogOut size={18} />
               </button>
             </div>
           ) : (
@@ -243,6 +281,32 @@ export default function Navbar({ activeTab, setActiveTab, onOpenAddSkill, onOpen
           >
             Browse Skills
           </button>
+          {user && (
+            <>
+              <button
+                onClick={() => handleNavClick('my-skills')}
+                style={{
+                  textAlign: 'left',
+                  padding: '0.65rem 0.5rem',
+                  fontWeight: 600,
+                  color: activeTab === 'my-skills' ? 'var(--primary)' : 'var(--slate-700)'
+                }}
+              >
+                My Skills
+              </button>
+              <button
+                onClick={() => handleNavClick('profile')}
+                style={{
+                  textAlign: 'left',
+                  padding: '0.65rem 0.5rem',
+                  fontWeight: 600,
+                  color: activeTab === 'profile' ? 'var(--primary)' : 'var(--slate-700)'
+                }}
+              >
+                Profile
+              </button>
+            </>
+          )}
           <button
             onClick={() => {
               setMobileMenuOpen(false);
@@ -259,18 +323,21 @@ export default function Navbar({ activeTab, setActiveTab, onOpenAddSkill, onOpen
 
           {user ? (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div 
+                onClick={() => handleNavClick('profile')}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+              >
                 <img 
-                  src={user.avatar} 
+                  src={user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'} 
                   alt={user.name} 
-                  style={{ width: '32px', height: '32px', borderRadius: '50%' }}
+                  style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
                 />
                 <div>
                   <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{user.name}</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--slate-500)' }}>{user.university}</div>
                 </div>
               </div>
-              <button onClick={onLogout} className="btn btn-ghost btn-sm">
+              <button onClick={onLogout} className="btn btn-ghost btn-sm" style={{ color: '#ef4444' }}>
                 Log Out
               </button>
             </div>

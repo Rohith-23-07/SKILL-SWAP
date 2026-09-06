@@ -6,7 +6,7 @@ const { getStatus, inMemorySkills } = require('../config/db');
 // @access  Public
 const getSkills = async (req, res) => {
   try {
-    const { q, category, level } = req.query;
+    const { q, category, level, userId } = req.query;
     const { cloudConnected } = getStatus();
 
     if (cloudConnected) {
@@ -18,6 +18,10 @@ const getSkills = async (req, res) => {
 
       if (level && level !== 'All') {
         query.level = level;
+      }
+
+      if (userId) {
+        query['user.id'] = userId;
       }
 
       if (q && q.trim() !== '') {
@@ -53,6 +57,12 @@ const getSkills = async (req, res) => {
         );
       }
 
+      if (userId) {
+        results = results.filter(
+          item => item.user && (item.user.id === userId || item.user._id === userId)
+        );
+      }
+
       if (q && q.trim() !== '') {
         const queryTerm = q.trim().toLowerCase();
         results = results.filter(item =>
@@ -72,7 +82,11 @@ const getSkills = async (req, res) => {
     }
   } catch (error) {
     console.error('Error in getSkills:', error);
-    res.status(500).json({ success: false, message: 'Server error fetching skills', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching skills',
+      error: error.message
+    });
   }
 };
 
@@ -104,10 +118,10 @@ const getSkillById = async (req, res) => {
 
 // @desc    Create new skill listing
 // @route   POST /api/skills
-// @access  Public (or authenticated)
+// @access  Private (Requires Authentication)
 const createSkill = async (req, res) => {
   try {
-    const { title, description, category, level, swapPreferences, tags, userName, userUniversity } = req.body;
+    const { title, description, category, level, swapPreferences, tags } = req.body;
 
     if (!title || !description || !category) {
       return res.status(400).json({
@@ -116,18 +130,20 @@ const createSkill = async (req, res) => {
       });
     }
 
+    // Determine ownership strictly from authenticated req.user
+    const userId = (req.user._id || req.user.id).toString();
     const newSkillData = {
       title: title.trim(),
       description: description.trim(),
       category: category || 'Programming',
       level: level || 'Intermediate',
-      swapPreferences: swapPreferences || 'Open to any relevant skills',
+      swapPreferences: swapPreferences ? swapPreferences.trim() : 'Open to relevant skill swap proposals',
       tags: Array.isArray(tags) ? tags : (tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : []),
       user: {
-        id: 'user-current',
-        name: userName || 'Student Collaborator',
-        university: userUniversity || 'Skill Swap University',
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
+        id: userId,
+        name: req.user.name,
+        university: req.user.university || 'State University',
+        avatar: req.user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
       },
       status: 'Active',
       createdAt: new Date()
@@ -158,65 +174,161 @@ const createSkill = async (req, res) => {
     }
   } catch (error) {
     console.error('Error creating skill:', error);
-    res.status(500).json({ success: false, message: 'Server error creating skill', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Server error creating skill',
+      error: error.message
+    });
   }
 };
 
-// @desc    Update a skill
+// @desc    Update a skill (Owner Only)
 // @route   PUT /api/skills/:id
-// @access  Public
+// @access  Private (Requires Authentication)
 const updateSkill = async (req, res) => {
   try {
     const { id } = req.params;
+    const currentUserId = (req.user._id || req.user.id).toString();
     const { cloudConnected } = getStatus();
 
     if (cloudConnected) {
-      const updated = await Skill.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
-      if (!updated) {
+      const skill = await Skill.findById(id);
+      if (!skill) {
         return res.status(404).json({ success: false, message: 'Skill not found' });
       }
-      return res.status(200).json({ success: true, data: updated });
+
+      // Verify Ownership
+      if (skill.user.id.toString() !== currentUserId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Not authorized: You can only update your own skills'
+        });
+      }
+
+      const { title, description, category, level, swapPreferences, tags, status } = req.body;
+      if (title) skill.title = title.trim();
+      if (description) skill.description = description.trim();
+      if (category) skill.category = category;
+      if (level) skill.level = level;
+      if (swapPreferences !== undefined) skill.swapPreferences = swapPreferences.trim();
+      if (tags) skill.tags = Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim()).filter(Boolean);
+      if (status) skill.status = status;
+
+      const updated = await skill.save();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Skill listing updated successfully',
+        data: updated
+      });
     } else {
       const index = inMemorySkills.findIndex(item => item.id === id || item._id === id);
       if (index === -1) {
         return res.status(404).json({ success: false, message: 'Skill not found' });
       }
-      inMemorySkills[index] = { ...inMemorySkills[index], ...req.body, updatedAt: new Date() };
-      return res.status(200).json({ success: true, data: inMemorySkills[index] });
+
+      const existingSkill = inMemorySkills[index];
+
+      // Verify Ownership
+      if (existingSkill.user.id.toString() !== currentUserId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Not authorized: You can only update your own skills'
+        });
+      }
+
+      const { title, description, category, level, swapPreferences, tags, status } = req.body;
+      const updatedSkill = {
+        ...existingSkill,
+        ...(title && { title: title.trim() }),
+        ...(description && { description: description.trim() }),
+        ...(category && { category }),
+        ...(level && { level }),
+        ...(swapPreferences !== undefined && { swapPreferences: swapPreferences.trim() }),
+        ...(tags && { tags: Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim()).filter(Boolean) }),
+        ...(status && { status }),
+        updatedAt: new Date()
+      };
+
+      inMemorySkills[index] = updatedSkill;
+
+      return res.status(200).json({
+        success: true,
+        message: 'Skill listing updated successfully',
+        data: updatedSkill
+      });
     }
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error updating skill', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Server error updating skill',
+      error: error.message
+    });
   }
 };
 
-// @desc    Delete a skill
+// @desc    Delete a skill (Owner Only)
 // @route   DELETE /api/skills/:id
-// @access  Public
+// @access  Private (Requires Authentication)
 const deleteSkill = async (req, res) => {
   try {
     const { id } = req.params;
+    const currentUserId = (req.user._id || req.user.id).toString();
     const { cloudConnected } = getStatus();
 
     if (cloudConnected) {
-      const deleted = await Skill.findByIdAndDelete(id);
-      if (!deleted) {
+      const skill = await Skill.findById(id);
+      if (!skill) {
         return res.status(404).json({ success: false, message: 'Skill not found' });
       }
-      return res.status(200).json({ success: true, message: 'Skill listing deleted' });
+
+      // Verify Ownership
+      if (skill.user.id.toString() !== currentUserId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Not authorized: You can only delete your own skills'
+        });
+      }
+
+      await Skill.findByIdAndDelete(id);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Skill listing deleted successfully'
+      });
     } else {
       const index = inMemorySkills.findIndex(item => item.id === id || item._id === id);
       if (index === -1) {
         return res.status(404).json({ success: false, message: 'Skill not found' });
       }
+
+      const existingSkill = inMemorySkills[index];
+
+      // Verify Ownership
+      if (existingSkill.user.id.toString() !== currentUserId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Not authorized: You can only delete your own skills'
+        });
+      }
+
       inMemorySkills.splice(index, 1);
-      return res.status(200).json({ success: true, message: 'Skill listing deleted' });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Skill listing deleted successfully'
+      });
     }
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error deleting skill', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Server error deleting skill',
+      error: error.message
+    });
   }
 };
 
-// @desc    Get skill categories list & counts
+// @desc    Get skill categories list
 // @route   GET /api/skills/categories
 // @access  Public
 const getCategories = async (req, res) => {

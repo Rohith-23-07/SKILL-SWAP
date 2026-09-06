@@ -1,7 +1,7 @@
 import React from 'react';
-import { ArrowLeftRight, User, Trash2 } from 'lucide-react';
+import { ArrowLeftRight, User, Trash2, UserCheck } from 'lucide-react';
 
-export default function SkillCard({ skill, onSelect, onDelete }) {
+export default function SkillCard({ skill, currentUser, onSelect, onDelete, onViewUser }) {
   const getCategoryClass = (category) => {
     switch (category) {
       case 'Programming': return 'badge-programming';
@@ -24,6 +24,9 @@ export default function SkillCard({ skill, onSelect, onDelete }) {
   };
 
   const skillId = skill._id || skill.id;
+  const currentUserId = currentUser ? (currentUser.id || currentUser._id)?.toString() : null;
+  const skillAuthorId = (skill.user?.id || skill.user?._id)?.toString();
+  const isOwner = currentUserId && skillAuthorId && currentUserId === skillAuthorId;
 
   return (
     <div className="card" style={{
@@ -44,9 +47,24 @@ export default function SkillCard({ skill, onSelect, onDelete }) {
           <span className={`badge ${getCategoryClass(skill.category)}`}>
             {skill.category}
           </span>
-          <span className={`level-badge ${getLevelClass(skill.level)}`}>
-            {skill.level}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            {isOwner && (
+              <span style={{
+                fontSize: '0.725rem',
+                fontWeight: 700,
+                color: 'var(--primary)',
+                backgroundColor: 'var(--primary-light)',
+                padding: '0.2rem 0.5rem',
+                borderRadius: 'var(--radius-sm)',
+                textTransform: 'uppercase'
+              }}>
+                Yours
+              </span>
+            )}
+            <span className={`level-badge ${getLevelClass(skill.level)}`}>
+              {skill.level}
+            </span>
+          </div>
         </div>
 
         {/* Skill Title */}
@@ -109,14 +127,26 @@ export default function SkillCard({ skill, onSelect, onDelete }) {
           </div>
         </div>
 
-        {/* Author / Student Info */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.75rem',
-          paddingTop: '0.75rem',
-          borderTop: '1px solid var(--slate-100)'
-        }}>
+        {/* Author / Student Info - Clickable for Public Profile */}
+        <div
+          onClick={(e) => {
+            if (onViewUser && skillAuthorId) {
+              e.stopPropagation();
+              onViewUser(skillAuthorId);
+            }
+          }}
+          title="Click to view student profile"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            paddingTop: '0.75rem',
+            borderTop: '1px solid var(--slate-100)',
+            cursor: onViewUser ? 'pointer' : 'default',
+            borderRadius: 'var(--radius-sm)',
+            transition: 'background-color 0.15s ease'
+          }}
+        >
           <img
             src={skill.user?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'}
             alt={skill.user?.name || 'Student'}
@@ -135,7 +165,9 @@ export default function SkillCard({ skill, onSelect, onDelete }) {
               color: 'var(--slate-800)',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
+              textDecoration: onViewUser ? 'underline' : 'none',
+              textDecorationColor: 'var(--slate-300)'
             }}>
               {skill.user?.name || 'Anonymous Student'}
             </div>
@@ -171,11 +203,12 @@ export default function SkillCard({ skill, onSelect, onDelete }) {
           <span>View Details & Swap</span>
         </button>
 
-        {onDelete && (
+        {/* Delete button only displayed to the authenticated owner */}
+        {isOwner && onDelete && (
           <button
             onClick={(e) => {
               e.stopPropagation();
-              if (window.confirm(`Delete listing "${skill.title}"?`)) {
+              if (window.confirm(`Are you sure you want to delete your listing "${skill.title}"?`)) {
                 onDelete(skillId);
               }
             }}

@@ -8,19 +8,20 @@ const {
   deleteSkill,
   getCategories
 } = require('../controllers/skillController');
+const { protect } = require('../middleware/auth');
 
-// Skill categories
+// Public categories route
 router.get('/categories', getCategories);
 
 // Skill collection routes
 router.route('/')
   .get(getSkills)
-  .post(createSkill);
+  .post(protect, createSkill);
 
 // Single skill routes
 router.route('/:id')
   .get(getSkillById)
-  .put(updateSkill)
-  .delete(deleteSkill);
+  .put(protect, updateSkill)
+  .delete(protect, deleteSkill);
 
 module.exports = router;
