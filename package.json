@@ -1,0 +1,26 @@
+{
+  "name": "skill-swap",
+  "version": "1.0.0",
+  "description": "A full-stack student skill exchange platform built for Cloud Application and Distributed Applications projects.",
+  "main": "server/server.js",
+  "scripts": {
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"blue,magenta\" \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "start": "node server/server.js",
+    "server": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client",
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install",
+    "build:client": "npm --prefix client run build"
+  },
+  "keywords": [
+    "skill-swap",
+    "cloud-applications",
+    "full-stack",
+    "mern",
+    "student-collaboration"
+  ],
+  "author": "Skill Swap Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
