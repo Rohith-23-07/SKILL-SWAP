@@ -79,15 +79,19 @@ app.use((err, req, res, next) => {
     error: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
-
-// Start Server
-app.listen(PORT, () => {
-  console.log(`
+// Start Server (local development only)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`
 =====================================================
   Skill Swap Backend Server Running!
   URL: http://localhost:${PORT}
   Health Check: http://localhost:${PORT}/api/health
   Skills API:   http://localhost:${PORT}/api/skills
 =====================================================
-  `);
-});
+    `);
+  });
+}
+
+// Export app for Vercel
+module.exports = app;
