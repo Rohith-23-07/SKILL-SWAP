@@ -15,16 +15,19 @@ connectDB();
 
 // Middleware
 app.use(cors({
-  origin: '*', // Allows local dev frontend from any port
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Request logging in development
+// Request logging
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString().substring(11, 19)}] ${req.method} ${req.originalUrl}`);
+  console.log(
+    `[${new Date().toISOString().substring(11, 19)}] ${req.method} ${req.originalUrl}`
+  );
   next();
 });
 
@@ -36,13 +39,26 @@ app.use('/api/users', require('./routes/userRoutes'));
 // Health & System Status Endpoint
 app.get('/api/health', (req, res) => {
   const dbStatus = getStatus();
+
+  // Check whether Vercel has received MONGODB_URI
+  // This only returns true/false, never the actual URI.
+  const mongodbConfigured =
+    !!process.env.MONGODB_URI &&
+    process.env.MONGODB_URI.trim() !== '';
+
   res.status(200).json({
     status: 'online',
     appName: 'Skill Swap REST API',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
+
+    // Diagnostic check
+    mongodbConfigured,
+
     database: {
-      status: dbStatus.cloudConnected ? 'Connected to MongoDB Cloud' : 'Running In-Memory Demo Mode',
+      status: dbStatus.cloudConnected
+        ? 'Connected to MongoDB Cloud'
+        : 'Running In-Memory Demo Mode',
       mode: dbStatus.mode,
       cloudConnected: dbStatus.cloudConnected
     }
@@ -54,31 +70,59 @@ app.get('/api', (req, res) => {
   res.json({
     message: 'Welcome to Skill Swap API',
     endpoints: [
-      { path: '/api/health', description: 'System and database health check' },
-      { path: '/api/skills', description: 'List or create student skills' },
-      { path: '/api/skills/categories', description: 'List available skill categories' },
-      { path: '/api/skills/:id', description: 'Get, update, or delete a skill' },
-      { path: '/api/auth/register', description: 'Student account registration' },
-      { path: '/api/auth/login', description: 'Student account login' },
-      { path: '/api/auth/me', description: 'Get current student session info' }
+      {
+        path: '/api/health',
+        description: 'System and database health check'
+      },
+      {
+        path: '/api/skills',
+        description: 'List or create student skills'
+      },
+      {
+        path: '/api/skills/categories',
+        description: 'List available skill categories'
+      },
+      {
+        path: '/api/skills/:id',
+        description: 'Get, update, or delete a skill'
+      },
+      {
+        path: '/api/auth/register',
+        description: 'Student account registration'
+      },
+      {
+        path: '/api/auth/login',
+        description: 'Student account login'
+      },
+      {
+        path: '/api/auth/me',
+        description: 'Get current student session info'
+      }
     ]
   });
 });
 
 // 404 Handler for undefined API routes
 app.use('/api/*', (req, res) => {
-  res.status(404).json({ success: false, message: `Route ${req.originalUrl} not found` });
+  res.status(404).json({
+    success: false,
+    message: `Route ${req.originalUrl} not found`
+  });
 });
 
 // Global Error Handler
 app.use((err, req, res, next) => {
   console.error('Unhandled server error:', err);
+
   res.status(500).json({
     success: false,
     message: 'Internal Server Error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    error: process.env.NODE_ENV === 'development'
+      ? err.message
+      : undefined
   });
 });
+
 // Start Server (local development only)
 if (require.main === module) {
   app.listen(PORT, () => {
