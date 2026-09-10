@@ -11,7 +11,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Connect to Database (MongoDB Cloud Atlas or In-Memory Sample Data)
-connectDB();
+const dbReady = connectDB();
 
 // Middleware
 app.use(cors({
@@ -30,7 +30,11 @@ app.use((req, res, next) => {
   );
   next();
 });
-
+// Wait for MongoDB connection before handling API requests
+app.use(async (req, res, next) => {
+  await dbReady;
+  next();
+});
 // API Routes
 app.use('/api/skills', require('./routes/skillRoutes'));
 app.use('/api/auth', require('./routes/authRoutes'));
