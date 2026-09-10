@@ -123,7 +123,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start Server (local development only)
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`
@@ -137,5 +136,4 @@ if (require.main === module) {
   });
 }
 
-// Export app for Vercel
 module.exports = app;
